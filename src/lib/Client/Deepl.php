@@ -16,6 +16,8 @@ use Ibexa\Contracts\AutomatedTranslation\Client\ClientInterface;
 class Deepl implements ClientInterface
 {
     private string $authKey;
+    private string $host = 'https://api.deepl.com';
+    private string $translateApi = '/v2/translate';
 
     public function getServiceAlias(): string
     {
@@ -36,6 +38,14 @@ class Deepl implements ClientInterface
             throw new ClientNotConfiguredException('authKey is required');
         }
         $this->authKey = $configuration['authKey'];
+
+        if (isset($configuration['host'])) {
+            $this->host = $configuration['host'];
+        }
+
+        if (isset($configuration['translateApi'])) {
+            $this->translateApi = $configuration['translateApi'];
+        }
     }
 
     public function translate(string $payload, ?string $from, string $to): string
@@ -44,6 +54,7 @@ class Deepl implements ClientInterface
             'auth_key' => $this->authKey,
             'target_lang' => $this->normalized($to),
             'tag_handling' => 'xml',
+            'ignore_tags' => 'x',
             'text' => $payload,
         ];
 
@@ -55,11 +66,11 @@ class Deepl implements ClientInterface
 
         $http = new Client(
             [
-                'base_uri' => 'https://api.deepl.com',
+                'base_uri' => $this->host,
                 'timeout' => 5.0,
             ]
         );
-        $response = $http->post('/v1/translate', ['form_params' => $parameters]);
+        $response = $http->post($this->host.$this->translateApi, ['form_params' => $parameters]);
         // May use the native json method from guzzle
         $json = json_decode($response->getBody()->getContents());
 
@@ -86,9 +97,9 @@ class Deepl implements ClientInterface
     }
 
     /**
-     * List of available code https://www.deepl.com/api.html.
+     * See source_language parameter from https://developers.deepl.com/docs/api-reference/translate/openapi-spec-for-text-translation
      */
-    private const LANGUAGE_CODES = ['EN', 'DE', 'FR', 'ES', 'IT', 'NL', 'PL'];
+    private const LANGUAGE_CODES = ['BG','CS','DA','DE','EL','EN','ES','ET','FI','FR','HU','ID','IT','JA','KO','LT','LV','NB','NL','PL','PT','RO','RU','SK','SL','SV','TR','UK','ZH'];
 }
 
 class_alias(Deepl::class, 'EzSystems\EzPlatformAutomatedTranslation\Client\Deepl');
