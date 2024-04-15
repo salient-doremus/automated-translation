@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Ibexa\AutomatedTranslation\Encoder\BlockAttribute;
 
+use Ibexa\Contracts\FieldTypePage\FieldType\Page\Block\Definition\BlockAttributeDefinition;
 use InvalidArgumentException;
 
 final class BlockAttributeEncoderManager
@@ -26,18 +27,18 @@ final class BlockAttributeEncoderManager
     /**
      * @param mixed $value
      */
-    public function encode(string $type, $value): string
+    public function encode(BlockAttributeDefinition $attributeDefinition, $value): string
     {
         foreach ($this->blockAttributeEncoders as $blockAttributeEncoder) {
-            if ($blockAttributeEncoder->canEncode($type)) {
-                return $blockAttributeEncoder->encode($value);
+            if ($blockAttributeEncoder->canEncode($attributeDefinition->getType())) {
+                return $blockAttributeEncoder->encode($value, $attributeDefinition);
             }
         }
 
         throw new InvalidArgumentException(
             sprintf(
                 'Unable to encode block attribute %s. Make sure block attribute encoder service for it is properly registered.',
-                $type
+                $attributeDefinition->getType()
             )
         );
     }
@@ -45,18 +46,18 @@ final class BlockAttributeEncoderManager
     /**
      * @throws \Ibexa\AutomatedTranslation\Exception\EmptyTranslatedAttributeException
      */
-    public function decode(string $type, string $value): string
+    public function decode(BlockAttributeDefinition $attributeDefinition, string $value): string
     {
         foreach ($this->blockAttributeEncoders as $blockAttributeEncoder) {
-            if ($blockAttributeEncoder->canDecode($type)) {
-                return $blockAttributeEncoder->decode($value);
+            if ($blockAttributeEncoder->canDecode($attributeDefinition->getType())) {
+                return $blockAttributeEncoder->decode($value, $attributeDefinition);
             }
         }
 
         throw new InvalidArgumentException(
             sprintf(
                 'Unable to decode block attribute %s. Make sure block attribute encoder service for it is properly registered.',
-                $type
+                $attributeDefinition->getType()
             )
         );
     }
