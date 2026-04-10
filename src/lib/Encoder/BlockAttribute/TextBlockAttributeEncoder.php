@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Ibexa\AutomatedTranslation\Encoder\BlockAttribute;
 
 use Ibexa\Contracts\AutomatedTranslation\Encoder\BlockAttribute\BlockAttributeEncoderInterface;
+use Ibexa\Contracts\FieldTypePage\FieldType\Page\Block\Definition\BlockAttributeDefinition;
 
 final class TextBlockAttributeEncoder implements BlockAttributeEncoderInterface
 {
@@ -24,12 +25,12 @@ final class TextBlockAttributeEncoder implements BlockAttributeEncoderInterface
         return $type === self::TYPE;
     }
 
-    public function encode($value): string
+    public function encode($value, BlockAttributeDefinition $attributeDefinition): string
     {
         return (string) $value;
     }
 
-    public function decode(string $value): string
+    public function decode(string $value, BlockAttributeDefinition $attributeDefinition): string
     {
         return $value;
     }

@@ -11,6 +11,7 @@ namespace Ibexa\AutomatedTranslation\Encoder\BlockAttribute;
 use Ibexa\AutomatedTranslation\Encoder\RichText\RichTextEncoder;
 use Ibexa\AutomatedTranslation\Exception\EmptyTranslatedAttributeException;
 use Ibexa\Contracts\AutomatedTranslation\Encoder\BlockAttribute\BlockAttributeEncoderInterface;
+use Ibexa\Contracts\FieldTypePage\FieldType\Page\Block\Definition\BlockAttributeDefinition;
 
 final class RichTextBlockAttributeEncoder implements BlockAttributeEncoderInterface
 {
@@ -34,12 +35,12 @@ final class RichTextBlockAttributeEncoder implements BlockAttributeEncoderInterf
         return $type === self::TYPE;
     }
 
-    public function encode($value): string
+    public function encode($value, BlockAttributeDefinition $attributeDefinition): string
     {
         return $this->richTextEncoder->encode((string) $value);
     }
 
-    public function decode(string $value): string
+    public function decode(string $value, BlockAttributeDefinition $attributeDefinition): string
     {
         $decodedValue = $this->richTextEncoder->decode($value);
 

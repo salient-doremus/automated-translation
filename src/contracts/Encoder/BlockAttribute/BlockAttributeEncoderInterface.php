@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Ibexa\Contracts\AutomatedTranslation\Encoder\BlockAttribute;
 
+use Ibexa\Contracts\FieldTypePage\FieldType\Page\Block\Definition\BlockAttributeDefinition;
+
 interface BlockAttributeEncoderInterface
 {
     public function canEncode(string $type): bool;
@@ -17,9 +19,9 @@ interface BlockAttributeEncoderInterface
     /**
      * @param mixed $value
      */
-    public function encode($value): string;
+    public function encode($value, BlockAttributeDefinition $attributeDefinition): string;
 
-    public function decode(string $value): string;
+    public function decode(string $value, BlockAttributeDefinition $attributeDefinition): string;
 }
 
 class_alias(BlockAttributeEncoderInterface::class, 'EzSystems\EzPlatformAutomatedTranslation\Encoder\BlockAttribute\BlockAttributeEncoderInterface');

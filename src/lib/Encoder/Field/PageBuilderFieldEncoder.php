@@ -12,9 +12,10 @@ use Ibexa\AutomatedTranslation\Encoder\BlockAttribute\BlockAttributeEncoderManag
 use Ibexa\AutomatedTranslation\Exception\EmptyTranslatedAttributeException;
 use Ibexa\Contracts\AutomatedTranslation\Encoder\Field\FieldEncoderInterface;
 use Ibexa\Contracts\Core\Repository\Values\Content\Field;
+use Ibexa\Contracts\FieldTypePage\FieldType\Page\Block\Definition\BlockAttributeDefinition;
 use Ibexa\Core\FieldType\Value as APIValue;
 use Ibexa\FieldTypePage\FieldType\LandingPage\Value;
-use Ibexa\FieldTypePage\FieldType\Page\Block\Definition\BlockDefinitionFactoryInterface;
+use Ibexa\FieldTypePage\FieldType\Page\Block\Definition\BlockDefinitionFactory;
 use InvalidArgumentException;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 
@@ -24,11 +25,11 @@ final class PageBuilderFieldEncoder implements FieldEncoderInterface
 
     private BlockAttributeEncoderManager $blockAttributeEncoderManager;
 
-    private BlockDefinitionFactoryInterface $blockDefinitionFactory;
+    private BlockDefinitionFactory $blockDefinitionFactory;
 
     public function __construct(
         BlockAttributeEncoderManager $blockAttributeEncoderManager,
-        BlockDefinitionFactoryInterface $blockDefinitionFactory
+        BlockDefinitionFactory $blockDefinitionFactory
     ) {
         $this->blockAttributeEncoderManager = $blockAttributeEncoderManager;
         $this->blockDefinitionFactory = $blockDefinitionFactory;
@@ -51,28 +52,18 @@ final class PageBuilderFieldEncoder implements FieldEncoderInterface
         $page = $value->getPage();
         $blocks = [];
 
-        $blockIterable = $page === null ? [] : $page->getBlockIterator();
-
-        foreach ($blockIterable as $block) {
+        foreach ($page->getBlockIterator() as $block) {
             $blockDefinition = $this->blockDefinitionFactory->getBlockDefinition($block->getType());
             $attrs = [];
-            $attributes = $blockDefinition->getAttributes();
 
             foreach ($block->getAttributes() as $attribute) {
-                $attributeName = $attribute->getName();
-                if (empty($attributes[$attributeName])) {
-                    continue;
-                }
-                $attributeType = $attributes[$attributeName]->getType();
+                $attributeDefinition = $blockDefinition->getAttributes()[$attribute->getName()];
 
-                if (null === ($attributeValue = $this->encodeBlockAttribute($attributeType, $attribute->getValue()))) {
+                if (null === ($attributeValue = $this->encodeBlockAttribute($attributeDefinition, $attribute->getValue()))) {
                     continue;
                 }
 
-                $attrs[$attributeName] = [
-                    '@type' => $attributeType,
-                    '#' => $attributeValue,
-                ];
+                $attrs[$attribute->getName()] = $attributeValue;
             }
 
             $blocks[$block->getId()] = [
@@ -107,12 +98,7 @@ final class PageBuilderFieldEncoder implements FieldEncoderInterface
         );
 
         /** @var \Ibexa\FieldTypePage\FieldType\LandingPage\Value $previousFieldValue */
-        $page = $previousFieldValue->getPage();
-        if ($page === null) {
-            return new Value();
-        }
-
-        $page = clone $page;
+        $page = clone $previousFieldValue->getPage();
         $decodeArray = $encoder->decode($data, XmlEncoder::FORMAT);
 
         if (!is_array($decodeArray)) {
@@ -124,8 +110,11 @@ final class PageBuilderFieldEncoder implements FieldEncoderInterface
             $block->setName($xmlValue['name']);
 
             if (is_array($xmlValue['attributes'])) {
+                $blockDefinition = $this->blockDefinitionFactory->getBlockDefinition($block->getType());
+
                 foreach ($xmlValue['attributes'] as $attributeName => $attribute) {
-                    if (null === ($attributeValue = $this->decodeBlockAttribute($attribute['@type'], $attribute['#']))) {
+                    $attributeDefinition = $blockDefinition->getAttributes()[$attributeName];
+                    if (null === ($attributeValue = $this->decodeBlockAttribute($attributeDefinition, $attribute))) {
                         continue;
                     }
 
@@ -140,10 +129,10 @@ final class PageBuilderFieldEncoder implements FieldEncoderInterface
     /**
      * @param mixed $value
      */
-    private function encodeBlockAttribute(string $type, $value): ?string
+    private function encodeBlockAttribute(BlockAttributeDefinition $attributeDefinition, $value): ?string
     {
         try {
-            $value = $this->blockAttributeEncoderManager->encode($type, $value);
+            $value = $this->blockAttributeEncoderManager->encode($attributeDefinition, $value);
         } catch (InvalidArgumentException $e) {
             return null;
         }
@@ -151,10 +140,10 @@ final class PageBuilderFieldEncoder implements FieldEncoderInterface
         return $value;
     }
 
-    private function decodeBlockAttribute(string $type, string $value): ?string
+    private function decodeBlockAttribute(BlockAttributeDefinition $attributeDefinition, string $value): ?string
     {
         try {
-            $value = $this->blockAttributeEncoderManager->decode($type, $value);
+            $value = $this->blockAttributeEncoderManager->decode($attributeDefinition, $value);
         } catch (InvalidArgumentException | EmptyTranslatedAttributeException $e) {
             return null;
         }
