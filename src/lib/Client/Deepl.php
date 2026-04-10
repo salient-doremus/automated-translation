@@ -74,7 +74,7 @@ class Deepl implements ClientInterface
 
         $http = new Client(
             [
-                'base_uri' => 'https://api.deepl.com',
+                'base_uri' => $_ENV['DEEPL_HOST'] ?: 'https://api.deepl.com',
                 'timeout' => 5.0,
                 'headers' => [
                     'Authorization' => 'DeepL-Auth-Key ' . $this->authKey,
